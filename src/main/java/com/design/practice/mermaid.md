@@ -2,105 +2,246 @@
 classDiagram
     direction TB
 
-    %% ========= CORE =========
-    class ParkingLot {
-        +vehicleArrives(Vehicle) Ticket
-        +vehicleExits(Ticket, Payment)
-    }
-
-    class ParkingBuilding
-    class ParkingLevel
-
-    class EntranceGate
-    class ExitGate
-
-    ParkingLot --> ParkingBuilding
-    ParkingLot --> EntranceGate
-    ParkingLot --> ExitGate
-    ParkingBuilding --> ParkingLevel
-
-    %% ========= VEHICLE =========
-    class Vehicle {
-        vehicleNumber
-        vehicleType
-    }
-
+    %% ========================
+    %% ENUMS
+    %% ========================
     class VehicleType {
-        <<enum>>
+        <<enumeration>>
         TWO_WHEELER
         FOUR_WHEELER
     }
 
-    Vehicle --> VehicleType
+    class ParkingEvent {
+        <<enumeration>>
+        SPOT_OCCUPIED
+        SPOT_RELEASED
+        PARKING_FULL
+    }
 
-    %% ========= PARKING =========
+    %% ========================
+    %% ENTITIES
+    %% ========================
+    class Vehicle {
+        -String vehicleNumber
+        -VehicleType vehicleType
+        +getVehicleNumber() String
+        +getVehicleType() VehicleType
+    }
+
     class ParkingSpot {
-        spotId
-        isFree
+        -String spotId
+        -boolean isFree
+        +isSpotFree() boolean
+        +occupySpot() void
+        +releaseSpot() void
+        +getSpotId() String
     }
 
-    class ParkingSpotManager {
-        <<abstract>>
-        park()
-        unPark()
+    class Ticket {
+        -Vehicle vehicle
+        -ParkingLevel level
+        -ParkingSpot spot
+        -LocalDateTime entryTime
+        +getVehicle() Vehicle
+        +getLevel() ParkingLevel
+        +getSpot() ParkingSpot
+        +getEntryTime() LocalDateTime
     }
 
-    class TwoWheelerSpotManager
-    class FourWheelerSpotManager
-
-    ParkingSpotManager <|-- TwoWheelerSpotManager
-    ParkingSpotManager <|-- FourWheelerSpotManager
-    ParkingSpotManager --> ParkingSpot
-
-    %% ========= STRATEGY: SPOT =========
+    %% ========================
+    %% STRATEGY: Spot Lookup
+    %% ========================
     class ParkingSpotLookupStrategy {
         <<interface>>
-        selectSpot()
+        +selectSpot(List~ParkingSpot~) ParkingSpot
     }
 
-    class NearestStrategy
-    class RandomStrategy
-
-    ParkingSpotLookupStrategy <|.. NearestStrategy
-    ParkingSpotLookupStrategy <|.. RandomStrategy
-    ParkingSpotManager --> ParkingSpotLookupStrategy
-
-    %% ========= TICKET =========
-    class Ticket {
-        entryTime
+    class RandomLookupStrategy {
+        +selectSpot(List~ParkingSpot~) ParkingSpot
     }
 
-    Ticket --> Vehicle
-    Ticket --> ParkingSpot
-    Ticket --> ParkingLevel
+    class NearestLookupStrategy {
+        <<proposed>>
+        +selectSpot(List~ParkingSpot~) ParkingSpot
+    }
 
-    %% ========= PRICING =========
+    %% ========================
+    %% STRATEGY: Pricing
+    %% ========================
     class PricingStrategy {
         <<interface>>
-        calculate()
+        +calculate(Ticket) double
     }
 
-    class HourlyPricing
-    class FixedPricing
+    class FixedPricingStrategy {
+        +calculate(Ticket) double
+    }
 
-    PricingStrategy <|.. HourlyPricing
-    PricingStrategy <|.. FixedPricing
+    class HourlyPricingStrategy {
+        <<proposed>>
+        +calculate(Ticket) double
+    }
 
-    class CostComputation
-    CostComputation --> PricingStrategy
+    class CostComputation {
+        -PricingStrategy pricingStrategy
+        +compute(Ticket) double
+    }
 
-    %% ========= PAYMENT =========
+    %% ========================
+    %% STRATEGY: Payment
+    %% ========================
     class Payment {
         <<interface>>
-        pay()
+        +pay(double) boolean
     }
 
-    class Cash
-    class UPI
+    class CashPayment {
+        +pay(double) boolean
+    }
 
-    Payment <|.. Cash
-    Payment <|.. UPI
+    class UPIPayment {
+        +pay(double) boolean
+    }
 
-    ExitGate --> CostComputation
-    ExitGate ..> Payment
+    %% ========================
+    %% TEMPLATE METHOD: Spot Managers
+    %% ========================
+    class ParkingSpotManager {
+        <<abstract>>
+        #List~ParkingSpot~ spots
+        #ParkingSpotLookupStrategy strategy
+        -ReentrantLock lock
+        +park() ParkingSpot
+        +unPark(ParkingSpot) void
+        +hasFreeSpot() boolean
+    }
+
+    class TwoWheelerSpotManager {
+    }
+
+    class FourWheelerSpotManager {
+    }
+
+    %% ========================
+    %% FACTORY (proposed)
+    %% ========================
+    class ParkingSpotManagerFactory {
+        <<proposed>>
+        -ParkingSpotLookupStrategy strategy
+        +create(VehicleType, List~ParkingSpot~) ParkingSpotManager
+    }
+
+    %% ========================
+    %% OBSERVER (proposed)
+    %% ========================
+    class ParkingEventListener {
+        <<interface>>
+        <<proposed>>
+        +onEvent(ParkingEvent, String) void
+    }
+
+    class DisplayBoardListener {
+        <<proposed>>
+        +onEvent(ParkingEvent, String) void
+    }
+
+    class AdminNotificationListener {
+        <<proposed>>
+        +onEvent(ParkingEvent, String) void
+    }
+
+    %% ========================
+    %% CORE: Parking Lot System
+    %% ========================
+    class ParkingLot {
+        -ParkingBuilding building$
+        -EntranceGate entranceGate
+        -ExitGate exitGate
+        -ParkingLot instance$
+        +getInstance(...)$ ParkingLot
+        +vehicleArrives(Vehicle) Ticket
+        +vehicleExits(Ticket, Payment) void
+    }
+
+    class ParkingBuilding {
+        -List~ParkingLevel~ levels
+        -List~ParkingEventListener~ listeners
+        +allocate(Vehicle) Ticket
+        +release(Ticket) void
+        +addListener(ParkingEventListener) void
+        +removeListener(ParkingEventListener) void
+        -notifyListeners(ParkingEvent, String) void
+    }
+
+    class ParkingLevel {
+        -int levelNumber
+        -Map~VehicleType, ParkingSpotManager~ managers
+        +hasAvailability(VehicleType) boolean
+        +park(VehicleType) ParkingSpot
+        +unPark(VehicleType, ParkingSpot) void
+        +getLevelNumber() int
+    }
+
+    class EntranceGate {
+        +enter(ParkingBuilding, Vehicle) Ticket
+    }
+
+    class ExitGate {
+        -CostComputation costComputation
+        +completeExit(ParkingBuilding, Ticket, Payment) void
+        -calculatePrice(Ticket) double
+    }
+
+    %% ========================
+    %% RELATIONSHIPS
+    %% ========================
+
+    %% Ticket composition
+    Ticket --> Vehicle : has
+    Ticket --> ParkingSpot : has
+    Ticket --> ParkingLevel : has
+
+    %% Vehicle uses enum
+    Vehicle --> VehicleType : has
+
+    %% Strategy: Lookup
+    ParkingSpotLookupStrategy <|.. RandomLookupStrategy : implements
+    ParkingSpotLookupStrategy <|.. NearestLookupStrategy : implements
+
+    %% Strategy: Pricing
+    PricingStrategy <|.. FixedPricingStrategy : implements
+    PricingStrategy <|.. HourlyPricingStrategy : implements
+    CostComputation --> PricingStrategy : delegates to
+
+    %% Strategy: Payment
+    Payment <|.. CashPayment : implements
+    Payment <|.. UPIPayment : implements
+
+    %% Template Method: Managers
+    ParkingSpotManager <|-- TwoWheelerSpotManager : extends
+    ParkingSpotManager <|-- FourWheelerSpotManager : extends
+    ParkingSpotManager --> ParkingSpotLookupStrategy : uses
+    ParkingSpotManager --> ParkingSpot : manages
+
+    %% Factory
+    ParkingSpotManagerFactory --> ParkingSpotManager : creates
+    ParkingSpotManagerFactory --> ParkingSpotLookupStrategy : uses
+
+    %% Observer
+    ParkingEventListener <|.. DisplayBoardListener : implements
+    ParkingEventListener <|.. AdminNotificationListener : implements
+    ParkingBuilding --> ParkingEventListener : notifies *
+
+    %% Core system composition
+    ParkingLot --> ParkingBuilding : has
+    ParkingLot --> EntranceGate : has
+    ParkingLot --> ExitGate : has
+    ParkingBuilding --> ParkingLevel : has *
+    ParkingLevel --> ParkingSpotManager : has per VehicleType
+    ExitGate --> CostComputation : has
+    ExitGate ..> Payment : uses
+
+    %% Gate interactions
+    EntranceGate ..> ParkingBuilding : calls allocate
+    ExitGate ..> ParkingBuilding : calls release
 ```
