@@ -4,6 +4,35 @@ import com.design.practice.Entity.Ticket;
 import com.design.practice.payment.Payment;
 import com.design.practice.pricing.CostComputation;
 
+/**
+ * [OOP — Composition + Dependency Injection]
+ *
+ * ExitGate handles the exit flow: compute cost → collect payment → release spot.
+ * It composes CostComputation (which itself uses Strategy for pricing).
+ *
+ * Key interview points:
+ *
+ *  1. Dependency Injection (DI) via constructor:
+ *     CostComputation is injected, not created inside ExitGate. This means:
+ *       - ExitGate doesn't decide the pricing strategy — the caller does.
+ *       - In tests, you can inject a mock CostComputation.
+ *       - In production, Spring/Guice would wire this automatically.
+ *
+ *  2. Method parameter injection:
+ *     Payment is passed to completeExit() per-call (not stored as a field).
+ *     This is intentional: each exit may use a different payment method.
+ *     CostComputation is per-gate (field), Payment is per-transaction (param).
+ *
+ *  3. Fail-fast on payment failure:
+ *     If payment.pay() returns false, we throw immediately — the gate stays
+ *     closed. The spot is NOT released. This is transactional thinking:
+ *     release only after successful payment.
+ *
+ *  4. Flow of the exit:
+ *     completeExit() → calculateAmount() → CostComputation.compute()
+ *                                          → PricingStrategy.calculate()
+ *     This chain shows how Strategy + Composition create a flexible pipeline.
+ */
 public class ExitGate {
     private final CostComputation computation;
 
