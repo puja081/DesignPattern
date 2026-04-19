@@ -1,6 +1,6 @@
 # Inventory Management System — Low Level Design (SDE 3)
 
-> **New to LLD?** Start with [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md) first.
+> **New to LLD?** Start with [BEGINNER_GUIDE.md](./BEGINNER_GUIDE.md) first.
 > It explains what inventory management is, walks through every class step-by-step,
 > and traces the complete flow with real examples. Come back here once you're comfortable.
 
@@ -601,6 +601,7 @@ Our design uses Inventory-level locks (synchronized on each Inventory instance).
 | **Reservation timeout (stale PENDING)** | NOT implemented — but mention: "In production, I'd add a `reservedUntil` timestamp to Inventory and a scheduled job to release expired reservations." | This is a **must-mention** for SDE 3 |
 | **Product in no warehouse** | `reserveStock()` returns null → `InsufficientStockException` | "Same flow as out-of-stock" |
 | **Admin restocks during active orders** | `restock()` only increases `totalQuantity`, never touches `reservedQuantity`. Both are synchronized. Safe. | "Restock and reservation are independent state transitions" |
+| **Product price changes after order placed** | `OrderItem.unitPrice` captures `product.getPrice()` at order creation time. `getSubtotal()` uses `unitPrice`, not the live product price. Future price changes don't affect existing orders. | "Price snapshotting — `unitPrice` freezes the price at order time" |
 
 ---
 
@@ -612,6 +613,7 @@ Our design uses Inventory-level locks (synchronized on each Inventory instance).
 | **"What if two users order the last item simultaneously?"** | "The `synchronized` block on `Inventory.reserve()` ensures only one succeeds. The other gets `reserve() → false` and an InsufficientStockException. No over-selling. For distributed systems, I'd use Redis `DECR` with a check, or optimistic locking with retry." |
 | **"How would you design the database schema?"** | "`products(id, name, category, price)`, `warehouses(id, name, address)`, `inventory(product_id, warehouse_id, total_qty, reserved_qty)` with composite PK, `orders(id, user_id, status, created_at)`, `order_items(id, order_id, product_id, warehouse_id, quantity, unit_price)`. Inventory table uses `SELECT ... FOR UPDATE` for row-level locking." |
 | **"How would you handle returns?"** | "Add `RETURN_REQUESTED` and `RETURNED` to OrderStatus. Create a `ReturnService` that validates the order is DELIVERED, then calls `inventoryService.addStock()` to return items to the originating warehouse. Fire a `StockReturnObserver` event." |
+| **"What if admin changes product price after order is placed?"** | "`OrderItem` captures `unitPrice = product.getPrice()` at order creation time. `getSubtotal()` uses this snapshot, not the live price. Past orders are never affected by future price changes. This is called price snapshotting." |
 | **"How would you add pricing rules?"** | "Strategy pattern again: `PricingStrategy` interface with `calculatePrice(Product, int quantity, User)`. Implementations: `StandardPricing`, `BulkDiscountPricing`, `MembershipPricing`. Inject into OrderService." |
 | **"What about reservation timeouts?"** | "Add `reservedUntil: LocalDateTime` to the reservation. A `ScheduledExecutorService` runs every N minutes, finds expired reservations, and calls `releaseReservation()`. This prevents cart-hoarders from blocking inventory indefinitely." |
 | **"How would you add audit logging?"** | "Observer pattern — add an `AuditLogObserver` that implements `StockObserver`. For order events, add an `OrderEventObserver` interface. Each observer writes to an append-only audit log. In production, publish events to Kafka for async processing." |
@@ -660,7 +662,7 @@ src/
 ├── service/
 │   ├── InventoryService.java            # Stock operations + strategy + observers
 │   └── OrderService.java               # Order lifecycle + saga rollback
-└── Main.java                            # Full demo: setup → order → confirm → cancel → strategy switch → rollback
+└── Main.java                            # Full demo: setup → order → confirm → cancel → strategy switch → rollback → price snapshot
 ```
 
 ### Compile & Run

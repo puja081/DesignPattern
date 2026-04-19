@@ -134,6 +134,22 @@ public class Main {
             printWarehouseStock(whMumbai);
         }
 
+        // ─── 13. Price Snapshot: unitPrice protects past orders ──
+        System.out.println("\n>>> Price Snapshot Demo (unitPrice use case)");
+        inventoryService.setSelectionStrategy(new NearestWarehouseStrategy());
+
+        System.out.println("  MacBook current price: $" + laptop.getPrice());
+        Map<String, Integer> order5Items = new LinkedHashMap<>();
+        order5Items.put("P001", 1);
+        Order order5 = orderService.placeOrder(customer, order5Items);
+        System.out.println("  Priya orders 1 MacBook at $" + laptop.getPrice());
+        System.out.println("  Order total: $" + String.format("%.2f", order5.getTotalAmount()));
+
+        laptop.setPrice(1999.99);
+        System.out.println("\n  Admin changes MacBook price to: $" + laptop.getPrice());
+        System.out.println("  Priya's order total is STILL: $" + String.format("%.2f", order5.getTotalAmount()));
+        System.out.println("  OrderItem.unitPrice captured at order time, not from Product.getPrice()");
+
         System.out.println("\n========================================");
         System.out.println("  Demo Complete");
         System.out.println("========================================");

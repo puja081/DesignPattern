@@ -5,6 +5,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.time.LocalDateTime;
 
+
 // ┌──────────────────────────────────────────────────────────────────────┐
 // │                                                                      │
 // │   MACHINE CODING — Inventory Management System                       │
@@ -54,6 +55,7 @@ class Product {
     String getName()     { return name; }
     Category getCategory() { return category; }
     double getPrice()    { return price; }
+    void setPrice(double price) { this.price = price; }
 
     @Override
     public String toString() {
@@ -292,20 +294,22 @@ enum OrderStatus {
 class OrderItem {
     final Product product;
     final int quantity;
+    final double unitPrice; // snapshot of price at order time — not affected by future price changes
     final Warehouse fulfilledFrom;
 
     OrderItem(Product product, int quantity, Warehouse fulfilledFrom) {
         this.product = product;
         this.quantity = quantity;
+        this.unitPrice = product.getPrice();
         this.fulfilledFrom = fulfilledFrom;
     }
 
-    double getSubtotal() { return product.getPrice() * quantity; }
+    double getSubtotal() { return unitPrice * quantity; }
 
     @Override
     public String toString() {
-        return String.format("  %s x%d from [%s] = $%.2f",
-                product.getName(), quantity, fulfilledFrom.getName(), getSubtotal());
+        return String.format("  %s x%d @ $%.2f from [%s] = $%.2f",
+                product.getName(), quantity, unitPrice, fulfilledFrom.getName(), getSubtotal());
     }
 }
 
@@ -364,7 +368,7 @@ class OrderService {
             // SAGA ROLLBACK: undo all successful reservations
             for (OrderItem item : reserved) {
                 inventoryService.releaseStock(
-                    item.fulfilledFrom.getId(), item.product.getId(), item.quantity);
+                        item.fulfilledFrom.getId(), item.product.getId(), item.quantity);
             }
             throw e;
         }
@@ -382,7 +386,7 @@ class OrderService {
         }
         for (OrderItem item : order.getItems()) {
             inventoryService.confirmStock(
-                item.fulfilledFrom.getId(), item.product.getId(), item.quantity);
+                    item.fulfilledFrom.getId(), item.product.getId(), item.quantity);
         }
         order.setStatus(OrderStatus.CONFIRMED);
     }
@@ -394,7 +398,7 @@ class OrderService {
         }
         for (OrderItem item : order.getItems()) {
             inventoryService.releaseStock(
-                item.fulfilledFrom.getId(), item.product.getId(), item.quantity);
+                    item.fulfilledFrom.getId(), item.product.getId(), item.quantity);
         }
         order.setStatus(OrderStatus.CANCELLED);
     }
@@ -553,6 +557,21 @@ public class InventoryManagementSystem {
             System.out.println("  iPhone stock unchanged (rollback worked):");
             whBangalore.printStock();
         }
+
+        // 2F: Price snapshot — unitPrice protects past orders from price changes
+        System.out.println("\n--- Price Snapshot (unitPrice use case) ---");
+        System.out.println("MacBook current price: $" + laptop.getPrice());
+
+        Map<String, Integer> snapCart = new LinkedHashMap<>();
+        snapCart.put("P001", 1);
+        Order order3 = orderService.placeOrder(snapCart);
+        System.out.println("Order placed at $" + laptop.getPrice() + " → total: $"
+                + String.format("%.2f", order3.getTotal()));
+
+        laptop.setPrice(1999.99);
+        System.out.println("Admin changes MacBook price to: $" + laptop.getPrice());
+        System.out.println("But order total is STILL: $" + String.format("%.2f", order3.getTotal()));
+        System.out.println("unitPrice was captured at order time, not from Product.getPrice()");
 
         System.out.println("\n✓ Phase 2 complete. All patterns demonstrated.");
     }

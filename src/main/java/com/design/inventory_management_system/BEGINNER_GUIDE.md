@@ -239,6 +239,23 @@ OrderItem
 └── subtotal: 4999.98 (2 × 2499.99)
 ```
 
+**Why `unitPrice` instead of just using `product.getPrice()`?**
+
+Product prices change over time. An admin might reduce the MacBook price next week.
+But if Priya ordered it at $2499, her order must still show $2499 — not the new price.
+
+```
+Monday:    MacBook price = $2499     Priya orders 1 MacBook
+Wednesday: Admin changes price to $2299
+Thursday:  Priya checks order → should show $2499, NOT $2299
+
+If OrderItem used product.getPrice():  subtotal = $2299  ← WRONG (billing bug!)
+If OrderItem uses unitPrice:           subtotal = $2499  ← CORRECT (captured at order time)
+```
+
+This is called **price snapshotting**. The `unitPrice` field freezes the price
+at the moment the order is created, so future price changes never affect past orders.
+
 **File: `model/Order.java`** — The full order.
 ```
 Order
@@ -294,7 +311,7 @@ is being used. You can swap strategies without changing any other code:
 inventoryService.setSelectionStrategy(new NearestWarehouseStrategy());
 
 // Flash sale: use max-stock warehouse (prevent one warehouse from running out)
-inventoryService.setSelectionStrategy(new MaxStockWarehouseStrategy());
+        inventoryService.setSelectionStrategy(new MaxStockWarehouseStrategy());
 ```
 
 #### Observer Pattern — "What happens when stock is low"
@@ -331,7 +348,7 @@ When stock drops below threshold, it tells ALL of them:
 ```java
 // Register observers (done once at startup)
 inventoryService.registerObserver(new LowStockAlertObserver());
-inventoryService.registerObserver(new RestockObserver(50));
+        inventoryService.registerObserver(new RestockObserver(50));
 
 // Later, when someone reserves stock and it drops below 10:
 // InventoryService automatically calls:
