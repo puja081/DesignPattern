@@ -1,8 +1,8 @@
-package strategy;
+package com.design.inventory_management_system.src.strategy;
 
-import model.Inventory;
-import model.Product;
-import model.Warehouse;
+import com.design.inventory_management_system.src.model.Inventory;
+import com.design.inventory_management_system.src.model.Product;
+import com.design.inventory_management_system.src.model.Warehouse;
 
 import java.util.List;
 

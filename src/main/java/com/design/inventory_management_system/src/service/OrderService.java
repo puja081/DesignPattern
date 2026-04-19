@@ -1,13 +1,13 @@
-package service;
+package com.design.inventory_management_system.src.service;
 
-import exception.InsufficientStockException;
-import exception.OrderNotFoundException;
-import model.Order;
-import model.OrderItem;
-import model.OrderStatus;
-import model.Product;
-import model.User;
-import model.Warehouse;
+import com.design.inventory_management_system.src.exception.InsufficientStockException;
+import com.design.inventory_management_system.src.model.Order;
+import com.design.inventory_management_system.src.model.User;
+import com.design.inventory_management_system.src.exception.OrderNotFoundException;
+import com.design.inventory_management_system.src.model.OrderItem;
+import com.design.inventory_management_system.src.model.OrderStatus;
+import com.design.inventory_management_system.src.model.Product;
+import com.design.inventory_management_system.src.model.Warehouse;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

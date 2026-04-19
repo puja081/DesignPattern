@@ -1,11 +1,14 @@
-import model.*;
-import observer.LowStockAlertObserver;
-import observer.RestockObserver;
-import service.InventoryService;
-import service.OrderService;
-import strategy.MaxStockWarehouseStrategy;
-import strategy.NearestWarehouseStrategy;
-import strategy.WarehouseSelectionStrategy;
+package com.design.inventory_management_system.src;
+
+import com.design.inventory_management_system.src.model.*;
+import com.design.inventory_management_system.src.observer.LowStockAlertObserver;
+import com.design.inventory_management_system.src.observer.RestockObserver;
+import com.design.inventory_management_system.src.service.InventoryService;
+import com.design.inventory_management_system.src.strategy.MaxStockWarehouseStrategy;
+import com.design.inventory_management_system.src.strategy.NearestWarehouseStrategy;
+import com.design.inventory_management_system.src.strategy.WarehouseSelectionStrategy;
+
+import com.design.inventory_management_system.src.service.OrderService;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

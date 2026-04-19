@@ -1,10 +1,10 @@
-package service;
+package com.design.inventory_management_system.src.service;
 
-import model.Inventory;
-import model.Product;
-import model.Warehouse;
-import observer.StockObserver;
-import strategy.WarehouseSelectionStrategy;
+import com.design.inventory_management_system.src.strategy.WarehouseSelectionStrategy;
+import com.design.inventory_management_system.src.model.Inventory;
+import com.design.inventory_management_system.src.model.Product;
+import com.design.inventory_management_system.src.model.Warehouse;
+import com.design.inventory_management_system.src.observer.StockObserver;
 
 import java.util.ArrayList;
 import java.util.List;

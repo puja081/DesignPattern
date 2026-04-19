@@ -1,4 +1,4 @@
-package exception;
+package com.design.inventory_management_system.src.exception;
 
 public class InsufficientStockException extends RuntimeException {
     private final String productId;

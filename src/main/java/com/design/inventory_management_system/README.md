@@ -1,6 +1,6 @@
 # Inventory Management System — Low Level Design (SDE 3)
 
-> **New to LLD?** Start with [BEGINNER_GUIDE.md](./BEGINNER_GUIDE.md) first.
+> **New to LLD?** Start with [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md) first.
 > It explains what inventory management is, walks through every class step-by-step,
 > and traces the complete flow with real examples. Come back here once you're comfortable.
 

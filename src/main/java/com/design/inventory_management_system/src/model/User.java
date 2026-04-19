@@ -1,4 +1,4 @@
-package model;
+package com.design.inventory_management_system.src.model;
 
 import java.util.Objects;
 
