@@ -1,33 +1,16 @@
-plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.2.5'
-    id 'io.spring.dependency-management' version '1.1.4'
+allprojects {
+    group = 'com.design'
+    version = '1.0-SNAPSHOT'
 }
 
-group = 'com.design'
-version = '1.0-SNAPSHOT'
+subprojects {
+    apply plugin: 'java'
 
-java {
-    sourceCompatibility = '17'
-}
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+    java {
+        sourceCompatibility = '17'
     }
-}
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-}
-
-springBoot {
-    mainClass = 'com.design.machinecoding.MachineCodingApplication'
+    repositories {
+        mavenCentral()
+    }
 }

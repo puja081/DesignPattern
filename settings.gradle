@@ -1,1 +1,5 @@
-rootProject.name = 'machine-coding-practice'
+rootProject.name = 'design-patterns'
+
+include 'machinecoding'
+include 'inventory-management'
+include 'parking-lot'
