@@ -57,7 +57,7 @@ public class RedisLikeCache {
      * Promotes the key to MRU position (LRU behavior).
      */
     public String get(String key) {
-        Object val = lruCache.getWithPromotion(key);
+        Object val = lruCache.get(key);
         return val == null ? null : val.toString();
     }
 
