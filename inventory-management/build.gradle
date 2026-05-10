@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.design'
+version = '1.0-SNAPSHOT'
+description = 'Inventory Management System — Plain Java with Design Patterns'
+
+java {
+    sourceCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClass = 'com.design.inventory_management_system.src.Main'
+}

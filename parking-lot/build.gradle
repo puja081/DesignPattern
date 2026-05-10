@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.design'
+version = '1.0-SNAPSHOT'
+description = 'Parking Lot LLD — Plain Java with Design Patterns'
+
+java {
+    sourceCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClass = 'com.design.practice.parking_lot.ParkingLotClient'
+}
