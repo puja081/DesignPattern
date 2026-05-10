@@ -54,7 +54,7 @@ public class TwoLevelCacheService {
      */
     public String get(String key) {
         // ── L1 hit ──────────────────────────────────────────────────────────
-        Object l1Value = l1Cache.getWithPromotion(key);
+        Object l1Value = l1Cache.get(key);
         if (l1Value != null) {
             System.out.println("[L1 HIT] key=" + key);
             return l1Value.toString();

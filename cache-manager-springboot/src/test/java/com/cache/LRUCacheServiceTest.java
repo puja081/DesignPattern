@@ -37,13 +37,13 @@ public class LRUCacheServiceTest {
     @DisplayName("put and get basic operation")
     void testPutAndGet() {
         cache.put("name", "Alice");
-        assertEquals("Alice", cache.getWithPromotion("name"));
+        assertEquals("Alice", cache.get("name"));
     }
 
     @Test
     @DisplayName("get on missing key returns null")
     void testGetMissingKey() {
-        assertNull(cache.getWithPromotion("ghost"));
+        assertNull(cache.get("ghost"));
     }
 
     @Test
@@ -54,7 +54,7 @@ public class LRUCacheServiceTest {
         cache.put("k3", "v3");
         cache.put("k1", "v1_updated"); // update, not insert
         assertEquals(3, cache.getCurrentSize());
-        assertEquals("v1_updated", cache.getWithPromotion("k1"));
+        assertEquals("v1_updated", cache.get("k1"));
     }
 
     // ─── LRU Eviction ────────────────────────────────────────────────────────
@@ -68,15 +68,15 @@ public class LRUCacheServiceTest {
         cache.put("k3", "v3");
 
         // Access k1, making k2 the LRU
-        cache.getWithPromotion("k1"); // order now: k2(LRU) → k3 → k1(MRU)
+        cache.get("k1"); // order now: k2(LRU) → k3 → k1(MRU)
 
         // Insert k4: should evict k2 (LRU)
         cache.put("k4", "v4");
 
-        assertNull(cache.getWithPromotion("k2"),  "k2 should be evicted (LRU)");
-        assertNotNull(cache.getWithPromotion("k1"), "k1 should survive");
-        assertNotNull(cache.getWithPromotion("k3"), "k3 should survive");
-        assertNotNull(cache.getWithPromotion("k4"), "k4 should be present");
+        assertNull(cache.get("k2"),  "k2 should be evicted (LRU)");
+        assertNotNull(cache.get("k1"), "k1 should survive");
+        assertNotNull(cache.get("k3"), "k3 should survive");
+        assertNotNull(cache.get("k4"), "k4 should be present");
     }
 
     @Test
@@ -98,7 +98,7 @@ public class LRUCacheServiceTest {
     void testDelete() {
         cache.put("k1", "v1");
         assertTrue(cache.delete("k1"));
-        assertNull(cache.getWithPromotion("k1"));
+        assertNull(cache.get("k1"));
     }
 
     @Test
@@ -113,9 +113,9 @@ public class LRUCacheServiceTest {
     @DisplayName("hit/miss ratio tracked correctly")
     void testHitMissStats() {
         cache.put("k1", "v1");
-        cache.getWithPromotion("k1"); // hit
-        cache.getWithPromotion("k1"); // hit
-        cache.getWithPromotion("missing"); // miss
+        cache.get("k1"); // hit
+        cache.get("k1"); // hit
+        cache.get("missing"); // miss
 
         CacheStats stats = cache.getStats();
         assertEquals(2, stats.getTotalHits());
@@ -170,7 +170,7 @@ public class LRUCacheServiceTest {
                     if (isWriter) {
                         cache.put("shared", "updated-" + i);
                     } else {
-                        Object val = cache.getWithPromotion("shared");
+                        Object val = cache.get("shared");
                         // shared key always exists (writers update, never delete it)
                         if (val == null) nullReads.incrementAndGet();
                     }

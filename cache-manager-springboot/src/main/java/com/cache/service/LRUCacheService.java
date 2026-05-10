@@ -60,36 +60,22 @@ public class LRUCacheService {
 
     /**
      * Retrieve a value by key. Returns null if not found.
-     * Accessing a key promotes it to "most recently used."
+     *
+     * WHY writeLock and not readLock?
+     * LinkedHashMap with accessOrder=true relinks the accessed node to the
+     * tail of its internal doubly-linked list on EVERY get() call.
+     * That is a structural mutation — two concurrent get() calls can corrupt
+     * the linked list (broken prev/next pointers → infinite loop or NPE).
+     * So even "reads" need the exclusive write lock here.
+     *
+     * This is the fundamental trade-off of using LinkedHashMap for LRU:
+     * you lose true concurrent reads. The custom DoublyLinkedList approach
+     * in cache-manager avoids this because its HashMap.get() is a pure read.
      */
     public Object get(String key) {
-        lock.readLock().lock();
-        try {
-            CacheEntry<Object> entry = cache.get(key);
-            if (entry == null) {
-                totalMisses++;
-                return null;
-            }
-            // readLock cannot call entry.recordAccess() safely here
-            // because LinkedHashMap's get() with accessOrder=true mutates structure.
-            // We must upgrade to write lock for access tracking.
-            // (See getWithPromotion for the write-lock version)
-            totalHits++;
-            entry.recordAccess();
-            return entry.getValue();
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Full get with LRU promotion — must use write lock because LinkedHashMap
-     * with accessOrder=true modifies internal structure on get().
-     */
-    public Object getWithPromotion(String key) {
         lock.writeLock().lock();
         try {
-            CacheEntry<Object> entry = cache.get(key); // promotes to MRU under write lock
+            CacheEntry<Object> entry = cache.get(key);
             if (entry == null) {
                 totalMisses++;
                 return null;
@@ -170,13 +156,24 @@ public class LRUCacheService {
 
     /**
      * Metadata for a specific cache entry.
+     * Uses containsKey() (safe under readLock) to check existence,
+     * then upgrades to writeLock only if the key exists, to avoid
+     * the LinkedHashMap.get() mutation under readLock.
      */
     public CacheEntry<Object> getEntryMetadata(String key) {
         lock.readLock().lock();
         try {
-            return cache.get(key);
+            if (!cache.containsKey(key)) {
+                return null;
+            }
         } finally {
             lock.readLock().unlock();
+        }
+        lock.writeLock().lock();
+        try {
+            return cache.get(key);
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 

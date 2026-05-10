@@ -42,7 +42,7 @@ public class CacheController {
      */
     @GetMapping("/{key}")
     public ResponseEntity<Map<String, Object>> get(@PathVariable String key) {
-        Object value = cacheService.getWithPromotion(key);
+        Object value = cacheService.get(key);
         if (value == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "Key not found: " + key));
